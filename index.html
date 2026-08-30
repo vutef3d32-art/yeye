@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI 桌宠</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: transparent; overflow: hidden; height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 10px;
+  }
+
+  /* 人物形象（透明立绘） */
+  #pet {
+    -webkit-app-region: drag; /* 原生拖拽移动窗口，避免透明窗口 +1px 的 bug */
+    height: 52%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+  }
+  #pet img {
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  /* 对话文字：透明，无背景色块，靠描边保证可读 */
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 4px 8px;
+  }
+  #log::-webkit-scrollbar { width: 3px; }
+  #log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+  .msg {
+    max-width: 85%;
+    font-size: 15px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    -webkit-app-region: no-drag;
+    color: #fff;
+    text-shadow: 0 0 4px rgba(0,0,0,0.95), 0 1px 3px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7);
+  }
+  .me { align-self: flex-start; }
+  .you { align-self: flex-end; }
+
+  /* 输入栏：淡到几乎透明，只为可点 */
+  #bar {
+    -webkit-app-region: no-drag;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 8px;
+  }
+  #msg {
+    flex: 1;
+    background: rgba(20, 22, 34, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 16px;
+    outline: none;
+    color: #fff;
+    font-size: 13px;
+    height: 32px;
+    padding: 0 12px;
+  }
+  #msg::placeholder { color: rgba(255,255,255,0.5); }
+  button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+    background: rgba(20, 22, 34, 0.45);
+    color: #fff;
+  }
+  #mic.active { background: rgba(180, 60, 90, 0.8); }
+  #voice.on { background: rgba(40, 140, 90, 0.8); }
+  /* 系统窗口式缩放手柄：右边缘 / 下边缘 / 右下角 */
+  #resize-right {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 7px;
+    cursor: ew-resize;
+    z-index: 10;
+  }
+  #resize-bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 7px;
+    cursor: ns-resize;
+    z-index: 10;
+  }
+  #resize-corner {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    width: 26px;
+    height: 26px;
+    cursor: nwse-resize;
+    z-index: 11;
+    background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.45) 50%);
+  }
+</style>
+</head>
+<body>
+  <div id="pet"><img id="pet-img" alt=""></div>
+  <div id="log"></div>
+  <div id="bar">
+    <input id="msg" placeholder="打字，或空格长按开麦" autofocus>
+    <button id="voice" title="我说话开关">🔊</button>
+    <button id="mic" title="长按开麦 / 再按取消">🎙</button>
+  </div>
+  <div id="resize-right"></div>
+  <div id="resize-bottom"></div>
+  <div id="resize-corner"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

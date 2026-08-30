@@ -1,0 +1,16 @@
+{
+  "name": "beiyuan-pet",
+  "version": "0.1.0",
+  "description": "AI 桌宠 · 桌面宠物浮窗",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.0.0"
+  },
+  "dependencies": {
+    "jimp": "^1.6.1",
+    "ws": "^8.21.3"
+  }
+}
