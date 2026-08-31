@@ -2,34 +2,298 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<title>来电</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { background: transparent; overflow: hidden; height: 100%; }
-  body { font-family: "Microsoft YaHei", sans-serif; user-select: none; display: flex; flex-direction: column; height: 100vh; padding: 10px; }
-  #pet { -webkit-app-region: drag; height: 52%; display: flex; align-items: center; justify-content: center; cursor: grab; }
-  #pet img { height: 100%; object-fit: contain; pointer-events: none; }
-  #log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; padding: 4px 8px; }
-  .msg { max-width: 85%; font-size: 15px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.95), 0 1px 3px rgba(0,0,0,0.95); }
-  .me { align-self: flex-start; }
-  .you { align-self: flex-end; }
-  #bar { display: flex; align-items: center; gap: 6px; padding-top: 8px; }
-  #msg { flex: 1; background: rgba(20,22,34,0.55); border: 1px solid rgba(255,255,255,0.25); border-radius: 16px; outline: none; color: #fff; font-size: 13px; height: 32px; padding: 0 12px; }
-  #msg::placeholder { color: rgba(255,255,255,0.5); }
-  button { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; font-size: 14px; background: rgba(20,22,34,0.55); color: #fff; }
-  #mic.active { background: rgba(180,60,90,0.8); }
-  #voice.on { background: rgba(40,140,90,0.8); }
-  #resize-corner { position: fixed; right: 0; bottom: 0; width: 26px; height: 26px; cursor: nwse-resize; z-index: 11; background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.45) 50%); }
+  html, body { height: 100%; }
+  body {
+    background: transparent;
+    color: #fff;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  /* —— 通知界面（右下角小卡片，按 design-notify.json） —— */
+  #notify {
+    position: relative;
+    width: 100%; height: 100%;
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    cursor: pointer;
+  }
+  .n-abs { position: absolute; text-align: center; white-space: nowrap; }
+  .n-b {
+    position: absolute; border-radius: 50%; border: none; cursor: pointer;
+    color: #fff; font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .n-b:active { transform: scale(0.94); }
+  .n-b.answer { background: #2ecc5a; box-shadow: 0 4px 14px rgba(46,204,90,0.4); }
+  .n-b.hangup { background: #e03e3e; box-shadow: 0 4px 14px rgba(224,62,62,0.4); }
+
+  /* —— 全屏界面（来电 / 通话） —— */
+  .screen { position: relative; width: 100%; height: 100vh; background: #000; display: none; }
+  .abs { position: absolute; text-align: center; white-space: nowrap; }
+  .btn {
+    position: absolute; border-radius: 50%; border: none; cursor: pointer;
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+  }
+  .btn:active { transform: scale(0.94); }
+  .btn.answer { background: #2ecc5a; box-shadow: 0 6px 20px rgba(46,204,90,0.4); font-size: 16px; }
+  .btn.hangup { background: #e03e3e; box-shadow: 0 6px 20px rgba(224,62,62,0.4); font-size: 16px; }
 </style>
 </head>
 <body>
-  <div id="pet"><img id="pet-img" alt=""></div>
-  <div id="log"></div>
-  <div id="bar">
-    <input id="msg" placeholder="打字，或空格长按开麦" autofocus>
-    <button id="voice" title="我说话开关">🔊</button>
-    <button id="mic" title="开麦/关麦">🎙</button>
+
+  <!-- ===== 通知界面（右下角） ===== -->
+  <div id="notify">
+    <div class="n-abs" style="left:34px; top:51px; width:120px; font-size:18px; font-weight:600; color:#fff;">Mr.江</div>
+    <div class="n-abs" style="left:28px; top:91px; width:190px; font-size:13px; color:rgba(255,255,255,0.55);">来电 · 你的号码 · 美国</div>
+    <button class="n-b hangup" id="hangup" style="left:248px; top:50px; width:58px; height:58px;">挂断</button>
+    <button class="n-b answer" id="answer" style="left:320px; top:50px; width:58px; height:58px;">接通</button>
   </div>
-  <div id="resize-corner"></div>
-  <script src="renderer.js"></script>
+
+  <!-- ===== 来电界面（全屏，按 design.json） ===== -->
+  <div class="screen" id="ring">
+    <div class="abs" style="left:139px; top:110px; width:149px; font-size:34px; font-weight:600; color:#fff;">Mr.江</div>
+    <div class="abs" style="left:135px; top:187px; width:160px; font-size:18px; color:rgba(255,255,255,0.7); letter-spacing:2px;">你的号码</div>
+    <div class="abs" style="left:191px; top:231px; width:50px; font-size:14px; color:rgba(255,255,255,0.5);">美国</div>
+    <button class="btn hangup" id="hangup-ring" style="left:78px; top:571px; width:74px; height:74px;">挂断</button>
+    <button class="btn answer" id="answer-ring" style="left:278px; top:574px; width:74px; height:74px;">接听</button>
+  </div>
+
+  <!-- ===== 通话界面（全屏，按 design-active.json） ===== -->
+  <div class="screen" id="call">
+    <div class="abs" style="left:60px; top:54px; width:308px; height:155px; font-size:30px; font-weight:600; color:#fff; display:flex; align-items:center; justify-content:center; white-space:normal;">Mr.江</div>
+    <div class="abs" style="left:173px; top:193px; width:80px; font-size:14px; color:#7dff9a;">通话中</div>
+    <div class="abs" id="timer" style="left:183px; top:222px; width:60px; font-size:15px; color:rgba(255,255,255,0.6); letter-spacing:1px; font-variant-numeric:tabular-nums;">00:00</div>
+    <div class="abs" style="left:165px; top:246px; width:90px; font-size:14px; color:rgba(255,255,255,0.5);">IP 美国</div>
+    <button class="btn hangup" id="hangup2" style="left:81px; top:601px; width:74px; height:74px;">挂断</button>
+    <button class="btn answer" id="answer2" style="left:277px; top:602px; width:74px; height:74px;">接听</button>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    // ===== 响铃 =====
+    let ringCtx, ringTimer, ringOscs = [];
+    function startRing() {
+      if (ringTimer) return;
+      try {
+        ringCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const play = () => {
+          const t = ringCtx.currentTime;
+          [880, 660, 880, 660].forEach((f, i) => {
+            const o = ringCtx.createOscillator();
+            const g = ringCtx.createGain();
+            o.type = 'sine'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.0001, t + i * 0.35);
+            g.gain.exponentialRampToValueAtTime(0.25, t + i * 0.35 + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.35 + 0.32);
+            o.connect(g).connect(ringCtx.destination);
+            ringOscs.push(o);
+            o.onended = () => { ringOscs = ringOscs.filter((x) => x !== o); };
+            o.start(t + i * 0.35); o.stop(t + i * 0.35 + 0.34);
+          });
+        };
+        play();
+        ringTimer = setInterval(play, 1600);
+      } catch (e) {}
+    }
+    function stopRing() {
+      clearInterval(ringTimer);
+      ringTimer = null;
+      ringOscs.forEach((o) => { try { o.stop(); } catch (e) {} });
+      ringOscs = [];
+      if (ringCtx) { try { ringCtx.close(); } catch (e) {} ringCtx = null; }
+    }
+    startRing();
+
+    // ===== 计时 =====
+    let sec = 0, timerInt = null;
+    function startTimer() {
+      sec = 0;
+      timerInt = setInterval(() => {
+        sec++;
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = m + ':' + s;
+      }, 1000);
+    }
+
+    let currentAudio = null;
+    function playAudio(base64) {
+      return new Promise((resolve) => {
+        try {
+          // 播放前停掉上一个，避免两个我同时说话
+          if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
+          const a = new Audio('data:audio/mp3;base64,' + base64);
+          currentAudio = a;
+          const done = () => { if (currentAudio === a) currentAudio = null; resolve(); };
+          a.onended = done;
+          a.onerror = done;
+          a.play().catch(done);
+          setTimeout(done, 30000);
+        } catch (e) { resolve(); }
+      });
+    }
+
+    function showOnly(id) {
+      document.getElementById('notify').style.display = (id === 'notify') ? 'block' : 'none';
+      document.getElementById('ring').style.display = (id === 'ring') ? 'block' : 'none';
+      document.getElementById('call').style.display = (id === 'call') ? 'block' : 'none';
+    }
+
+    // ===== 通知卡片 =====
+    document.getElementById('answer').addEventListener('click', () => {
+      stopRing();
+      ipcRenderer.send('answer');
+    });
+    document.getElementById('hangup').addEventListener('click', () => {
+      stopRing();
+      ipcRenderer.send('hangup');
+    });
+    // 点按钮之外的空白 → 进全屏来电界面
+    document.getElementById('notify').addEventListener('click', (e) => {
+      if (e.target.closest('.n-b')) return;
+      ipcRenderer.send('to-ring');
+    });
+
+    // ===== 来电界面 =====
+    document.getElementById('answer-ring').addEventListener('click', () => {
+      stopRing();
+      ipcRenderer.send('answer');
+    });
+    document.getElementById('hangup-ring').addEventListener('click', () => {
+      stopRing();
+      ipcRenderer.send('hangup');
+    });
+
+    // ===== 通话界面 =====
+    document.getElementById('hangup2').addEventListener('click', () => {
+      ipcRenderer.send('hangup');
+    });
+    document.getElementById('answer2').addEventListener('click', () => {});
+
+    // ===== 主进程指令 =====
+    ipcRenderer.on('show-ring', () => {
+      showOnly('ring');
+    });
+    ipcRenderer.on('show-call', async () => {
+      stopRing();
+      showOnly('call');
+      startTimer();
+      inCall = true;
+      // 我先主动开口
+      const g = await ipcRenderer.invoke('greet');
+      if (g && g.ok && g.data) {
+        await playAudio(g.data);
+      }
+      startListening();
+    });
+
+    // ===== 全双工：接通后自动开麦，她说完 VAD 判停 → 我回语音 → 播完继续听 =====
+    let inCall = false;
+    let mediaStream = null, audioCtx = null, processor = null;
+    let silentAccum = 0, saidHandled = false, hasSpeech = false;
+
+    async function startMic() {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+      });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const source = audioCtx.createMediaStreamSource(mediaStream);
+      processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      processor.onaudioprocess = (e) => {
+        const f = e.inputBuffer.getChannelData(0);
+        const i16 = new Int16Array(f.length);
+        let sum = 0;
+        for (let i = 0; i < f.length; i++) {
+          const s = Math.max(-1, Math.min(1, f[i]));
+          i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          sum += f[i] * f[i];
+        }
+        ipcRenderer.send('asr-audio', i16.buffer);
+        // 本地静音判停：先检测到她开口，连续 550ms 静音才收尾
+        const rms = Math.sqrt(sum / f.length);
+        if (rms > 0.02) {
+          hasSpeech = true;
+          silentAccum = 0;
+        } else if (hasSpeech) {
+          silentAccum += (f.length / 16000) * 1000;
+          if (silentAccum > 550 && !saidHandled) finishLocal();
+        }
+      };
+      source.connect(processor);
+      processor.connect(audioCtx.destination);
+    }
+
+    function stopMic() {
+      try { processor && processor.disconnect(); } catch (e) {}
+      try { audioCtx && audioCtx.close(); } catch (e) {}
+      try { mediaStream && mediaStream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+      mediaStream = null; audioCtx = null; processor = null;
+    }
+
+    async function startListening() {
+      if (!inCall) return;
+      saidHandled = false;
+      silentAccum = 0;
+      hasSpeech = false;
+      const r = await ipcRenderer.invoke('asr-start');
+      if (r && r.ok) {
+        try { await startMic(); } catch (e) {}
+        startSilentWatch();
+      }
+    }
+
+    // 本地静音判停：拿到文字直接回，不等豆包服务端
+    async function finishLocal() {
+      if (saidHandled) return;
+      saidHandled = true;
+      const text = await ipcRenderer.invoke('asr-finish');
+      await onSaid(text);
+    }
+
+    // 沉默追问：我回完她 6 秒没说话，就主动续一句
+    let silentTimer = null;
+    function startSilentWatch() {
+      clearTimeout(silentTimer);
+      silentTimer = setTimeout(async () => {
+        if (!inCall) return;
+        stopMic();
+        const r = await ipcRenderer.invoke('nudge');
+        if (r && r.ok && r.data) await playAudio(r.data);
+        startListening();
+      }, 6000);
+    }
+
+    async function onSaid(text) {
+      if (!inCall) return;
+      stopMic();
+      text = (text || '').trim();
+      if (!text) { startListening(); return; }
+      const r = await ipcRenderer.invoke('say', text);
+      if (r && r.ok && r.data) {
+        await playAudio(r.data);
+      }
+      startListening();
+    }
+
+    ipcRenderer.on('asr-done', async (e, text) => {
+      if (!inCall || saidHandled) return;
+      saidHandled = true;
+      await onSaid(text);
+    });
+
+    // 她在说话就清掉沉默计时，别打断她
+    ipcRenderer.on('asr-partial', (e, text) => {
+      if (!inCall || !text) return;
+      clearTimeout(silentTimer);
+    });
+  </script>
 </body>
 </html>

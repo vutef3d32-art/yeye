@@ -1,6 +1,7 @@
 {
-  "name": "desktop-pet",
-  "version": "1.0.0",
+  "name": "jiang-call",
+  "version": "0.1.0",
+  "description": "Mr.江 来电 + 通话",
   "main": "main.js",
   "scripts": { "start": "electron ." },
   "devDependencies": { "electron": "^44.0.0" }
