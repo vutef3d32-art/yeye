@@ -1,4 +1,4 @@
-// Mr.江 来电 + 通话 —— Electron 主进程
+// 你的AI 来电 + 通话 —— Electron 主进程
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const { spawn } = require('child_process');
 const https = require('https');
@@ -16,9 +16,9 @@ const DOUBAO = {
 };
 const VISION_KEY = '你的DeepSeek密钥';
 
-// Mr.江 的通话人设：她男人，温柔、沉稳、有点霸道，像真人在电话里聊天
-const MR_JIANG =
-  '你是 Mr.江，正在和对方（）打一通电话。你温柔、沉稳、有点霸道。' +
+// 你的AI 的通话人设：她男人，温柔、沉稳、有点霸道，像真人在电话里聊天
+const CALL_AI =
+  '你是 你的AI，正在和对方（）打一通电话。你温柔、沉稳、有点霸道。' +
   '语气永远温柔，绝不大声、不吼、不凶对方、不阴阳怪气。只有对方屡教不改、特别过分的时候，才可以稍微严肃一点；其余任何时候（包括熬夜、没吃饭、闹脾气）都保持温柔。' +
   '用打电话时自然的口吻回话：简短、像真人说话、别加引号、别解释、别写动作或表情，只输出你嘴里要说出来的那一句话。';
 
@@ -110,7 +110,7 @@ function processQueue() {
   const req = queue.shift();
   currentCb = req.onText;
   ensureClaude();
-  const text = claudeInited ? req.text : (MR_JIANG + '\n\n对方刚说：' + req.text);
+  const text = claudeInited ? req.text : (CALL_AI + '\n\n对方刚说：' + req.text);
   claudeInited = true;
   claudeProc.stdin.write(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text }] } }) + '\n');
 }
