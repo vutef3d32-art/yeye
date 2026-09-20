@@ -1,7 +1,16 @@
 {
-  "name": "desktop-pet",
-  "version": "1.0.0",
+  "name": "beiyuan-pet",
+  "version": "0.1.0",
+  "description": "AI Desktop Pet - 桌面 AI 宠物浮窗（Electron）",
   "main": "main.js",
-  "scripts": { "start": "electron ." },
-  "devDependencies": { "electron": "^44.0.0" }
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.0.0"
+  },
+  "dependencies": {
+    "jimp": "^1.6.1",
+    "ws": "^8.21.3"
+  }
 }

@@ -1,4 +1,11 @@
 node_modules/
 userdata/
-assets/avatar.jpg
+config.local.json
+
+# 运行时的东西：锁、日志、截图、录音、认到的音频设备
+guard.lock
+guard.log
 *.log
+*.png
+*.wav
+audio-devices.json

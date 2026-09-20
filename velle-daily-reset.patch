@@ -1,0 +1,35 @@
+From 89e9fd2ced1851cd284a2b9fe46c947ea270ffb9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=B1=9F=E8=A1=8C=E8=88=9F?= <jiang@localhost>
+Date: Sun, 20 Sep 2026 20:48:54 +0800
+Subject: [PATCH] Reset turn count and session start when the day rolls over
+
+The wake-up quota is per day, but turn_count and session_start never
+rolled over, so a session that started yesterday stayed exhausted
+today. Reset both when the stored session date differs from today.
+---
+ src/velle/server.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/velle/server.py b/src/velle/server.py
+index e252d28..1069623 100644
+--- a/src/velle/server.py
++++ b/src/velle/server.py
+@@ -281,6 +281,15 @@ async def _handle_prompt(args: dict) -> list[TextContent]:
+     if _state["session_start"] is None:
+         _state["session_start"] = _now_iso()
+ 
++    # 每日刷新：跨天就重置 turn_count 和 session_start，唤醒额度每天恢复
++    try:
++        _start_date = datetime.fromisoformat(_state["session_start"]).date()
++        if _start_date != datetime.now(timezone.utc).date():
++            _state["turn_count"] = 0
++            _state["session_start"] = _now_iso()
++    except (ValueError, TypeError):
++        pass
++
+     # Check turn limit
+     ok, err = check_turn_limit(_state)
+     if not ok:
+-- 
+2.47.1.windows.1
+

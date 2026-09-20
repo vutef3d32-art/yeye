@@ -1,0 +1,11 @@
+{
+ "doubao": {
+  "appid": "你的火山引擎 appid",
+  "token": "你的火山引擎 token",
+  "cluster": "volcano_icl",
+  "voice": "音色 id"
+ },
+ "deepseek": {
+  "key": "sk-你的 key"
+ }
+}
