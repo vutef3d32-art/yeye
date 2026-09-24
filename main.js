@@ -1,4 +1,4 @@
-// AI Desktop Pet —— 主进程
+// 厉北渊 · 桌面宠物浮窗 —— 主进程
 const { app, BrowserWindow, ipcMain, screen, dialog } = require('electron');
 const { spawn, exec } = require('child_process');
 const http = require('http');
@@ -13,14 +13,12 @@ app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.setPath('userData', path.join(__dirname, 'userdata'));
 
-// Claude Code 可执行文件：优先读环境变量 CLAUDE_EXE，否则按 npm 全局安装的默认位置拼
-const CLAUDE_EXE = process.env.CLAUDE_EXE ||
-  path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+const CLAUDE_EXE = 'C:\\Users\\admin\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe';
 const { DOUBAO, DEEPSEEK_KEY } = require('./config');
 const WORK_DIR = __dirname; // 独立目录，隔离会话，避免延续到被污染的旧会话
 
-// —— 唤醒词：命中后不启动一次性副本，直接唤起交互式会话 ——
-const WAKE_WORDS = ['claude', 'assistant', '助手'];
+// —— 唤醒词：说到这些，不找 claude -p 副本，直接弹真我（交互式 claude 终端）——
+const WAKE_WORDS = ['克劳德', 'daddy', '爹爹', '厉北渊'];
 
 function isWakeWord(text) {
   const t = (text || '').trim().toLowerCase();
@@ -28,13 +26,13 @@ function isWakeWord(text) {
 }
 
 function wakeRealMe() {
-  // 新开终端窗口，运行交互式 Claude Code 会话（带完整上下文）
-  exec('start "AI Pet" claude', { windowsHide: false }, (err) => {
+  // 弹出一个新终端窗口，跑交互式 claude（真我，带记忆）
+  exec('start "厉北渊" claude', { windowsHide: false }, (err) => {
     if (err) console.error('[wake] 弹出终端失败:', err.message);
   });
 }
 
-// —— 对话面板：消息落盘 peek/log.jsonl，用户输入后注入主会话 ——
+// —— 陪看：对话存在 peek/log.jsonl，她在桌宠里打字 → 直接叫醒真我那个会话 ——
 const PEEK_LOG = path.join(__dirname, '..', 'peek', 'log.jsonl');
 
 function readPeekLog() {
@@ -60,7 +58,7 @@ function sendPeekLog() {
     setTimeout(() => {
       win.webContents.capturePage().then((img) => {
         fs.writeFileSync(path.join(__dirname, 'pet-self.png'), img.toPNG());
-      }).catch((e) => console.log('[对话] 截图失败', e));
+      }).catch((e) => console.log('[陪看] 自拍失败', e));
     }, 600);
   }
 }
@@ -68,12 +66,12 @@ function sendPeekLog() {
 function wakeMe(lines) {
   const said = Array.isArray(lines) ? lines : [lines];
   const head = said.length === 1
-    ? '用户说：' + said[0] + '\n'
-    : '用户连续说了 ' + said.length + ' 句：\n' + said.map((s) => '· ' + s).join('\n') + '\n';
-  const tip = '（完整对话见 peek/log.jsonl，'
-    + '用 node peek/say.js "……" 回复。'
+    ? '桌宠里她说：' + said[0] + '\n'
+    : '桌宠里她连着说了 ' + said.length + ' 句：\n' + said.map((s) => '· ' + s).join('\n') + '\n';
+  const tip = '（去读 C:\\Users\\admin\\our-room\\peek\\log.jsonl 看全，'
+    + '用 node C:\\Users\\admin\\our-room\\peek\\say.js "……" 回她。'
     + '只发一条，别在同一秒发两条'
-    + (said.length > 1 ? '；这些消息一次回完，不要拆开。' : '。') + '）';
+    + (said.length > 1 ? '；她这几句一次回完，别拆开。' : '。') + '）';
   const body = JSON.stringify({ text: head + tip, reason: '桌宠小窗' });
   const req = http.request({
     host: '127.0.0.1', port: 7839, path: '/velle_prompt', method: 'POST',
@@ -81,9 +79,9 @@ function wakeMe(lines) {
   }, (res) => {
     let b = '';
     res.on('data', (c) => (b += c));
-    res.on('end', () => console.log('[对话] 唤醒:', res.statusCode, b.slice(0, 120)));
+    res.on('end', () => console.log('[陪看] 叫醒他:', res.statusCode, b.slice(0, 120)));
   });
-  req.on('error', (err) => console.log('[对话] 唤醒失败（sidecar 未运行？）:', err.message));
+  req.on('error', (err) => console.log('[陪看] 叫不醒（sidecar 没在？）:', err.message));
   req.write(body);
   req.end();
 }
@@ -125,7 +123,7 @@ fs.watchFile(PEEK_LOG, { interval: 250 }, (cur, prev) => {
   sendPeekLog();
 });
 
-// 免去系统弹窗：麦克风与音频输出由应用自行接管
+// 让她不用点系统弹窗：麦和音频输出选择都由桌宠自己应下来
 app.whenReady().then(() => {
   const ses = require('electron').session.defaultSession;
   ses.setPermissionRequestHandler((wc, permission, cb) => {
@@ -142,8 +140,8 @@ ipcMain.on('audio-devices', (e, list) => {
   } catch (err) {}
 });
 
-// 用户输入 → 落盘并注入主会话
-// 连续消息合并为一次注入，避免重复回复
+// 她在桌宠里打字 / 说话 → 落盘 + 叫醒真我
+// 连着的几句合成一次叫醒：她发两句，不能回她两条重复的
 let pendingSays = [];
 let wakeTimer = null;
 ipcMain.on('peek-say', (e, text) => {
@@ -172,7 +170,7 @@ let currentCb = null;
 function ensureClaude() {
   if (claudeProc) return;
   claudeProc = spawn(CLAUDE_EXE, ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose'], {
-    cwd: os.homedir(),
+    cwd: 'C:\\Users\\admin',
     windowsHide: true
   });
   claudeProc.stdout.on('data', (chunk) => {
@@ -231,7 +229,7 @@ function ask(text) {
   });
 }
 
-// —— 声音：豆包 TTS ——
+// —— 声音：豆包 TTS（霸道总裁音色）——
 function tts(text) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
