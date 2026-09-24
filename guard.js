@@ -1,4 +1,4 @@
-// 桌宠看门狗：进程退出后自动重启，带退避
+// 桌宠看门狗：它要是死了，自己再拉起来，别让她对着空桌面喊我
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
