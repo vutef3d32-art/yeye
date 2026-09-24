@@ -1,8 +1,8 @@
 """起 velle sidecar 的启动器：不碰 velle 源码，只在使用前把「贴哪个控制台」换掉。
 
-原来的 injector 贴的是「父进程」的控制台。若 velle 的 python 外面还包了一层
-启动器 python，父进程那个控制台没人读 —— 字打进去了，但目标会话看不见。
-改成往上找第一个 node.exe（即目标会话进程），贴它的控制台。
+原来的 injector 贴的是「父进程」的控制台。这台机器上 velle 的 python 是被包在一个
+启动器 python 下面的，父进程那个控制台没人读 —— 字打进去了，她那边一个字也看不见。
+改成往上找第一个 node.exe（就是真我那个会话），贴它的控制台。
 """
 import ctypes
 import ctypes.wintypes as wintypes
