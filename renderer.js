@@ -90,7 +90,7 @@ async function playSpeak(text) {
   });
 }
 
-// 对话取自 peek/log.jsonl：AI 与用户的消息都显示在这里
+// 对话就是 peek/log.jsonl 那一份：我说的话、她打的字，都显示在这儿
 let lastKey = '';
 
 function hhmm(t) {
@@ -116,7 +116,7 @@ function renderPeek(msgs) {
     log.appendChild(d);
   }
   log.scrollTop = log.scrollHeight;
-  // 新到达的 AI 消息：若朗读已开启则念出
+  // 刚冒出来的我那条：如果她开了嗓，就念出来
   if (!first && msgs.length) {
     const last = msgs[msgs.length - 1];
     if (last.who !== 'baby' && last.t > prevLastT) queueSpeak(last.text);
